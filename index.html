@@ -90,15 +90,6 @@
   .note-box h3 { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
   .note-box p { font-size: 13px; color: var(--text); line-height: 1.5; white-space: pre-wrap; }
 
-  .overview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  .overview-card { background: var(--bg); border-radius: 12px; padding: 1.25rem; }
-  .overview-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-  .overview-card .dot { width: 10px; height: 10px; border-radius: 50%; }
-  .overview-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .overview-metric { padding: 8px; border-radius: 8px; background: var(--card); }
-  .overview-metric .label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
-  .overview-metric .value { font-size: 18px; font-weight: 600; margin-top: 2px; }
-  .overview-chart { margin-top: 12px; position: relative; height: 160px; }
 
   .loading { text-align: center; padding: 4rem 2rem; color: var(--text-secondary); }
   .loading i { font-size: 32px; animation: spin 1s linear infinite; display: block; margin-bottom: 12px; }
@@ -127,11 +118,6 @@
     .grid-table td { padding: 5px 4px; }
     .charts, .notes-section { grid-template-columns: 1fr; gap: 12px; }
     .chart-wrap { height: 200px; }
-    .overview-grid { grid-template-columns: 1fr; gap: 12px; }
-    .overview-card { padding: 1rem; }
-    .overview-card h3 { font-size: 15px; }
-    .overview-metric .value { font-size: 16px; }
-    .overview-chart { height: 140px; }
     .logo { height: 28px; }
     .refresh-btn { padding: 8px 12px; font-size: 12px; }
     .note-box { padding: 0.75rem; }
@@ -270,79 +256,26 @@ function render(brands) {
   tabsEl.innerHTML = '';
   contentEl.innerHTML = '';
 
-  // Overview tab
-  const overviewTab = document.createElement('div');
-  overviewTab.className = 'tab active';
-  overviewTab.textContent = 'Översikt';
-  overviewTab.onclick = () => switchTab('overview');
-  overviewTab.dataset.target = 'overview';
-  tabsEl.appendChild(overviewTab);
-
-  names.forEach(name => {
+  names.forEach((name, i) => {
     const tab = document.createElement('div');
-    tab.className = 'tab';
+    tab.className = 'tab' + (i === 0 ? ' active' : '');
     tab.textContent = name;
     tab.onclick = () => switchTab(name);
     tab.dataset.target = name;
     tabsEl.appendChild(tab);
   });
 
-  // Overview panel
-  const overviewPanel = document.createElement('div');
-  overviewPanel.className = 'brand-panel active';
-  overviewPanel.id = 'panel-overview';
-  overviewPanel.innerHTML = buildOverview(brands);
-  contentEl.appendChild(overviewPanel);
-
-  // Brand panels
-  names.forEach(name => {
+  names.forEach((name, i) => {
     const panel = document.createElement('div');
-    panel.className = 'brand-panel';
+    panel.className = 'brand-panel' + (i === 0 ? ' active' : '');
     panel.id = 'panel-' + name;
     panel.innerHTML = buildBrandPanel(name, brands[name]);
     contentEl.appendChild(panel);
   });
 
-  // Render all charts
   requestAnimationFrame(() => {
     names.forEach(name => renderBrandCharts(name, brands[name]));
-    renderOverviewCharts(brands);
   });
-}
-
-function buildOverview(brands) {
-  const names = Object.keys(brands);
-  let totalSpend = 0, totalRev = 0;
-  names.forEach(n => { totalSpend += sum(brands[n].spendTotal); totalRev += sum(brands[n].brutto); });
-  const roas = totalSpend > 0 ? (totalRev / totalSpend).toFixed(2) + 'x' : '—';
-
-  let h = '<div class="metrics" style="margin-bottom: 1.5rem;">';
-  h += `<div class="metric"><div class="label">Total spend</div><div class="value">${fmt(totalSpend)}</div></div>`;
-  h += `<div class="metric"><div class="label">Total intäkt brutto</div><div class="value">${fmt(totalRev)}</div></div>`;
-  h += `<div class="metric"><div class="label">ROAS brutto</div><div class="value">${roas}</div></div>`;
-  h += `<div class="metric"><div class="label">Nettomarginal</div><div class="value">${totalRev > 0 ? Math.round(((sum(names.map(n=>sum(brands[n].netto))) - totalSpend) / sum(names.map(n=>sum(brands[n].netto)))) * 100) + '%' : '—'}</div></div>`;
-  h += '</div>';
-
-  h += '<div class="overview-grid">';
-  names.forEach(name => {
-    const b = brands[name];
-    const c = BRAND_COLORS[name] || { main: '#888', bg: 'var(--bg)' };
-    const ts = sum(b.spendTotal);
-    const tr = sum(b.brutto);
-    const r = ts > 0 ? (tr / ts).toFixed(2) + 'x' : '—';
-    h += `<div class="overview-card">
-      <h3><span class="dot" style="background: ${c.main};"></span>${name}</h3>
-      <div class="overview-metrics">
-        <div class="overview-metric"><div class="label">Spend</div><div class="value" style="color: ${c.main};">${fmt(ts)}</div></div>
-        <div class="overview-metric"><div class="label">Intäkt</div><div class="value">${fmt(tr)}</div></div>
-        <div class="overview-metric"><div class="label">ROAS</div><div class="value">${r}</div></div>
-        <div class="overview-metric"><div class="label">Mf% netto</div><div class="value">${(() => { const valid = b.mfNetto.filter(v => v !== null); return valid.length > 0 ? Math.round(valid.reduce((a,b)=>a+b,0)/valid.length) + '%' : '—'; })()}</div></div>
-      </div>
-      <div class="overview-chart"><canvas id="ov-chart-${name.replace(/\s/g,'_')}" role="img" aria-label="Spend vs intäkt ${name}"></canvas></div>
-    </div>`;
-  });
-  h += '</div>';
-  return h;
 }
 
 function buildBrandPanel(name, b) {
@@ -473,40 +406,6 @@ function renderBrandCharts(name, b) {
       }
     });
   }
-}
-
-function renderOverviewCharts(brands) {
-  const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
-  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-  const textColor = isDark ? '#999' : '#666';
-  const days = DAYS.map(d => d.substring(0, 3));
-
-  Object.keys(brands).forEach(name => {
-    const b = brands[name];
-    const c = BRAND_COLORS[name] || { main: '#888' };
-    const safeName = name.replace(/\s/g, '_');
-    const el = document.getElementById('ov-chart-' + safeName);
-    if (!el) return;
-    if (charts['ov-' + safeName]) charts['ov-' + safeName].destroy();
-    charts['ov-' + safeName] = new Chart(el, {
-      type: 'bar',
-      data: {
-        labels: days,
-        datasets: [
-          { label: 'Spend', data: b.spendTotal, backgroundColor: '#E24B4A77', borderRadius: 3 },
-          { label: 'Intäkt', data: b.brutto, backgroundColor: c.main + '77', borderRadius: 3 }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10, family: 'Inter' } } },
-          y: { grid: { color: gridColor }, ticks: { display: false } }
-        }
-      }
-    });
-  });
 }
 
 fetchData();
