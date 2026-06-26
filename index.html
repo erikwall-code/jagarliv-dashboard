@@ -158,7 +158,8 @@ const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTHv10ybkEvoxp9
 const BRAND_COLORS = {
   'Jägarliv': { main: '#1D9E75', bg: 'var(--green-bg)' },
   'Friluftsfabriken': { main: '#3266ad', bg: 'var(--blue-bg)' },
-  'North Edge': { main: '#D85A30', bg: 'var(--coral-bg)' }
+  'North Edge': { main: '#D85A30', bg: 'var(--coral-bg)' },
+  'Jägarliv.de': { main: '#534AB7', bg: 'var(--purple-bg)' }
 };
 const DAYS = ['Söndag','Måndag','Tisdag','Onsdag','Torsdag','Fredag'];
 let charts = {};
@@ -184,30 +185,18 @@ function parseCSV(text) {
     const row = lines[i];
     const col1 = (row[1] || '').trim();
 
-    const brandNames = ['Jägarliv','Friluftsfabriken','North Edge'];
-    const col1n = col1.normalize('NFC');
-    const matchedBrand = brandNames.find(b => {
-      const bn = b.normalize('NFC');
-      return col1n === bn || col1n.startsWith(bn + ' ') || col1n.startsWith(bn + ' ');
-    });
-    if (!matchedBrand && (col1.toLowerCase().includes('garliv') || col1.toLowerCase().includes('jägar') || col1.toLowerCase().includes('jagar'))) {
-      current = 'Jägarliv';
-      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: [], merchant: [] };
-      continue;
-    }
-    if (!matchedBrand && col1.toLowerCase().includes('frilufts')) {
-      current = 'Friluftsfabriken';
-      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: [], merchant: [] };
-      continue;
-    }
-    if (!matchedBrand && col1.toLowerCase().includes('north')) {
-      current = 'North Edge';
-      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: [], merchant: [] };
-      continue;
-    }
-    if (matchedBrand) {
-      current = matchedBrand;
-      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: [], merchant: [] };
+    const col1l = col1.toLowerCase().normalize('NFC');
+    const brandPatterns = [
+      { name: 'Jägarliv.de', test: s => s.includes('.de') && (s.includes('garliv') || s.includes('jagar') || s.includes('jägar')) },
+      { name: 'Jägarliv', test: s => !s.includes('.de') && (s.includes('garliv') || s.includes('jagar') || s.includes('jägar')) },
+      { name: 'Friluftsfabriken', test: s => s.includes('frilufts') },
+      { name: 'North Edge', test: s => s.includes('north') },
+    ];
+    const newBrand = () => ({ google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: [], merchant: [], extras: {} });
+    const matched = brandPatterns.find(bp => bp.test(col1l));
+    if (matched) {
+      current = matched.name;
+      if (!brands[current]) brands[current] = newBrand();
       continue;
     }
     if (!current) continue;
@@ -224,6 +213,7 @@ function parseCSV(text) {
     else if (col1 === 'Mf% netto') b.mfNetto = vals.map(parsePct);
     else if (col1.includes('Check in')) b.checkins = vals.map(v => v.toLowerCase().trim() === 'x');
     else if (col1 === 'Merchant Center') b.merchant = vals.map(v => v.toLowerCase().trim() === 'x');
+    else if (col1 && !['Vecka 27','Spend',''].includes(col1)) { b.extras[col1] = vals.map(v => v.toLowerCase().trim() === 'x'); }
   }
   return brands;
 }
@@ -337,7 +327,24 @@ function buildBrandPanel(name, b) {
       <i class="ti ti-check checkin-icon"></i>
     </label>`;
   });
-  h += '</div></div>';
+  h += '</div>';
+  if (b.extras && Object.keys(b.extras).length > 0) {
+    Object.keys(b.extras).forEach(extraName => {
+      const vals = b.extras[extraName];
+      h += `<div style="margin-top: 12px;"><h3 style="font-size:13px; font-weight:500; color:var(--text-secondary); margin-bottom:8px;">${extraName}</h3>`;
+      h += '<div class="checkin-grid">';
+      DAYS.forEach((d, i) => {
+        const checked = vals[i] ? ' checked' : '';
+        h += `<label class="checkin-day">
+          <input type="checkbox"${checked} disabled>
+          <span class="checkin-label">${d.substring(0,3)}</span>
+          <i class="ti ti-check checkin-icon"></i>
+        </label>`;
+      });
+      h += '</div></div>';
+    });
+  }
+  h += '</div>';
   h += '</div>';
   return h;
 }
