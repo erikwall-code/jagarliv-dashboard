@@ -192,7 +192,7 @@ function parseCSV(text) {
       { name: 'Friluftsfabriken', test: s => s.includes('frilufts') },
       { name: 'North Edge', test: s => s.includes('north') },
     ];
-    const newBrand = () => ({ google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: [], merchant: [], extras: {} });
+    const newBrand = () => ({ google: [], meta: [], spendTotal: [], orders: [], aov: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: [], merchant: [], extras: {} });
     const matched = brandPatterns.find(bp => bp.test(col1l));
     if (matched) {
       current = matched.name;
@@ -207,6 +207,8 @@ function parseCSV(text) {
     if (col1 === 'Google') b.google = vals.map(parseNum);
     else if (col1 === 'Meta') b.meta = vals.map(parseNum);
     else if (col1 === 'Spend total') b.spendTotal = vals.map(parseNum);
+    else if (col1 === 'Antal order') b.orders = vals.map(parseNum);
+    else if (col1 === 'AOV') b.aov = vals.map(parseNum);
     else if (col1 === 'Intäkt brutto') b.brutto = vals.map(parseNum);
     else if (col1 === 'Intäkt netto') b.netto = vals.map(parseNum);
     else if (col1 === 'Mf% brutto') b.mfBrutto = vals.map(parsePct);
@@ -295,6 +297,10 @@ function buildBrandPanel(name, b) {
   h += `<div class="metric"><div class="label">ROAS brutto</div><div class="value">${roas}</div></div>`;
   h += `<div class="metric"><div class="label">ROAS netto</div><div class="value">${roasN}</div></div>`;
   h += `<div class="metric"><div class="label">Mf% netto snitt</div><div class="value">${mfnAvg}</div></div>`;
+  const totalOrders = sum(b.orders || []);
+  const avgAov = totalOrders > 0 ? Math.round(sum(b.aov || [].filter(v => v > 0)) / b.aov.filter(v => v > 0).length) : 0;
+  h += `<div class="metric"><div class="label">Antal ordrar</div><div class="value">${totalOrders > 0 ? totalOrders : '—'}</div></div>`;
+  h += `<div class="metric"><div class="label">AOV</div><div class="value">${avgAov > 0 ? fmt(avgAov) : '—'}</div></div>`;
   h += '</div>';
 
   h += '<div class="table-scroll"><table class="grid-table"><thead><tr><th></th>';
@@ -305,6 +311,9 @@ function buildBrandPanel(name, b) {
   h += tableRow('Google', b.google);
   h += tableRow('Meta', b.meta);
   h += tableRow('Spend total', b.spendTotal, true);
+  h += '<tr class="section-header"><td>Ordrar</td><td colspan="7"></td></tr>';
+  h += tableRow('Antal order', b.orders || [], false, true);
+  h += tableRow('AOV', b.aov || []);
   h += '<tr class="section-header"><td>Intäkt</td><td colspan="7"></td></tr>';
   h += tableRow('Brutto', b.brutto);
   h += tableRow('Netto', b.netto);
@@ -349,11 +358,13 @@ function buildBrandPanel(name, b) {
   return h;
 }
 
-function tableRow(label, arr, bold) {
+function tableRow(label, arr, bold, noUnit) {
   const cls = bold ? ' class="computed"' : '';
+  const f = noUnit ? (v => v > 0 ? Math.round(v).toLocaleString('sv-SE') : '—') : fmt;
   let h = `<tr${cls}><td>${label}</td>`;
-  arr.forEach(v => { h += `<td>${fmt(v)}</td>`; });
-  h += `<td>${fmt(sum(arr))}</td></tr>`;
+  arr.forEach(v => { h += `<td>${f(v)}</td>`; });
+  const total = sum(arr);
+  h += `<td>${noUnit ? (total > 0 ? Math.round(total).toLocaleString('sv-SE') : '—') : fmt(total)}</td></tr>`;
   return h;
 }
 
