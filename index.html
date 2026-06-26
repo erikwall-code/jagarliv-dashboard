@@ -148,7 +148,18 @@ let charts = {};
 let brandData = {};
 
 function parseCSV(text) {
-  const lines = text.split('\n').map(l => l.split(',').map(c => c.trim()));
+  const lines = text.split('\n').map(line => {
+    const cells = [];
+    let cur = '', inQuote = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQuote = !inQuote; }
+      else if (ch === ',' && !inQuote) { cells.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+    cells.push(cur.trim());
+    return cells;
+  });
   const brands = {};
   let current = null;
 
