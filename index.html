@@ -106,6 +106,8 @@
 
   .refresh-btn { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 13px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: inherit; }
   .refresh-btn:hover { background: var(--card); color: var(--text); }
+  .logo { height: 36px; }
+  @media (prefers-color-scheme: dark) { .logo { filter: invert(1); } }
 
   @media (max-width: 700px) {
     .charts, .notes-section { grid-template-columns: 1fr; }
@@ -118,7 +120,10 @@
 <body>
 
 <div class="header">
-  <h1><i class="ti ti-chart-dots-3" style="vertical-align: -2px;"></i> Jägarliv i Sverige AB</h1>
+  <div style="display: flex; align-items: center; justify-content: space-between;">
+    <h1>Jägarliv i Sverige AB</h1>
+    <img src="logo.png" alt="Jägarliv" class="logo">
+  </div>
   <div class="sub">
     <span class="live"></span>
     <span id="status">Hämtar data från Google Sheets...</span>
@@ -188,14 +193,18 @@ function sum(arr) { return arr.reduce((a, b) => a + b, 0); }
 async function fetchData() {
   document.getElementById('status').textContent = 'Hämtar data...';
   try {
-    const res = await fetch(CSV_URL);
+    const sheetId = '1Gt-eOQjYP9EpOWyCg-14jSfw0pWhjZxG2zElL2phBm0';
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
+    const res = await fetch(url);
     const text = await res.text();
-    brandData = parseCSV(text);
+    const clean = text.replace(/^"|"$/gm, '').replace(/""/g, '"');
+    brandData = parseCSV(clean);
     render(brandData);
     const now = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('status').textContent = `Vecka 27 — senast uppdaterad ${now}`;
   } catch (e) {
     document.getElementById('status').textContent = 'Kunde inte hämta data. Försök igen.';
+    console.error(e);
   }
 }
 
