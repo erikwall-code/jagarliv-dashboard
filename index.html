@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jägarliv i Sverige AB — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons-webfont/3.31.0/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #f5f5f0;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --text-secondary: #6b6b6b;
+    --text-hint: #999;
+    --border: rgba(0,0,0,0.08);
+    --green: #1D9E75;
+    --green-bg: #e6f5ef;
+    --red: #E24B4A;
+    --red-bg: #fceaea;
+    --purple: #534AB7;
+    --purple-bg: #eeedfe;
+    --coral: #D85A30;
+    --coral-bg: #faece7;
+    --blue: #3266ad;
+    --blue-bg: #e6f1fb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a;
+      --card: #242424;
+      --text: #e8e8e8;
+      --text-secondary: #999;
+      --text-hint: #666;
+      --border: rgba(255,255,255,0.08);
+      --green-bg: #0a2e20;
+      --red-bg: #2e1414;
+      --purple-bg: #1e1c38;
+      --coral-bg: #2e1a10;
+      --blue-bg: #12233a;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .header { padding: 2rem 2rem 1rem; max-width: 1100px; margin: 0 auto; }
+  .header h1 { font-size: 22px; font-weight: 600; }
+  .header .sub { font-size: 14px; color: var(--text-secondary); margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+  .header .live { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .tabs { display: flex; gap: 8px; padding: 0 2rem; max-width: 1100px; margin: 1rem auto 0; flex-wrap: wrap; }
+  .tab { padding: 8px 20px; border-radius: 8px 8px 0 0; font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); border-bottom: none; background: transparent; color: var(--text-secondary); transition: all 0.2s; }
+  .tab.active { background: var(--card); color: var(--text); }
+  .tab:hover:not(.active) { background: var(--card); opacity: 0.7; }
+  .tab-all { border-radius: 8px 8px 0 0; }
+
+  .content { max-width: 1100px; margin: 0 auto; padding: 0 2rem 2rem; }
+  .brand-panel { display: none; background: var(--card); border: 1px solid var(--border); border-radius: 0 12px 12px 12px; padding: 1.5rem; }
+  .brand-panel.active { display: block; }
+
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .metric { background: var(--bg); border-radius: 10px; padding: 1rem; }
+  .metric .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .metric .value { font-size: 22px; font-weight: 600; }
+  .metric .change { font-size: 12px; margin-top: 2px; }
+  .metric .change.pos { color: var(--green); }
+  .metric .change.neg { color: var(--red); }
+
+  .grid-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 1.5rem; }
+  .grid-table th { text-align: center; font-weight: 500; color: var(--text-secondary); font-size: 12px; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+  .grid-table th:first-child { text-align: left; width: 130px; }
+  .grid-table td { text-align: right; padding: 6px; border-bottom: 1px solid var(--border); }
+  .grid-table td:first-child { text-align: left; color: var(--text-secondary); font-weight: 500; }
+  .grid-table tr.section-header td { font-weight: 600; color: var(--text); padding-top: 12px; border-bottom: none; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .grid-table tr.computed td { color: var(--text); font-weight: 600; }
+  .grid-table tr.computed td:not(:first-child) { background: var(--bg); border-radius: 4px; }
+  .grid-table .mf-pos { color: var(--green); }
+  .grid-table .mf-neg { color: var(--red); }
+
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 1rem; }
+  .chart-card { background: var(--bg); border-radius: 10px; padding: 1rem; }
+  .chart-card h3 { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; }
+  .chart-wrap { position: relative; height: 220px; }
+
+  .notes-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 1.5rem; }
+  .note-box { background: var(--bg); border-radius: 10px; padding: 1rem; }
+  .note-box h3 { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+  .note-box p { font-size: 13px; color: var(--text); line-height: 1.5; white-space: pre-wrap; }
+
+  .overview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .overview-card { background: var(--bg); border-radius: 12px; padding: 1.25rem; }
+  .overview-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .overview-card .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .overview-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .overview-metric { padding: 8px; border-radius: 8px; background: var(--card); }
+  .overview-metric .label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+  .overview-metric .value { font-size: 18px; font-weight: 600; margin-top: 2px; }
+  .overview-chart { margin-top: 12px; position: relative; height: 160px; }
+
+  .loading { text-align: center; padding: 4rem 2rem; color: var(--text-secondary); }
+  .loading i { font-size: 32px; animation: spin 1s linear infinite; display: block; margin-bottom: 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .refresh-btn { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 13px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: inherit; }
+  .refresh-btn:hover { background: var(--card); color: var(--text); }
+
+  @media (max-width: 700px) {
+    .charts, .notes-section { grid-template-columns: 1fr; }
+    .overview-grid { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .header, .tabs, .content { padding-left: 1rem; padding-right: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><i class="ti ti-chart-dots-3" style="vertical-align: -2px;"></i> Jägarliv i Sverige AB</h1>
+  <div class="sub">
+    <span class="live"></span>
+    <span id="status">Hämtar data från Google Sheets...</span>
+    <button class="refresh-btn" onclick="fetchData()" style="margin-left: auto;"><i class="ti ti-refresh"></i> Uppdatera</button>
+  </div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="content" id="content">
+  <div class="loading"><i class="ti ti-loader-2"></i>Laddar dashboard...</div>
+</div>
+
+<script>
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTHv10ybkEvoxp99nHP55sLFD7AkfRZTQXH-WbYrXD3QUDjSYjeWqcV1hkHTbMQzUyj2u9gCL-aKhF2/pub?output=csv';
+const BRAND_COLORS = {
+  'Jägarliv': { main: '#1D9E75', bg: 'var(--green-bg)' },
+  'Friluftsfabriken': { main: '#3266ad', bg: 'var(--blue-bg)' },
+  'North Edge': { main: '#D85A30', bg: 'var(--coral-bg)' }
+};
+const DAYS = ['Söndag','Måndag','Tisdag','Onsdag','Torsdag','Fredag'];
+let charts = {};
+let brandData = {};
+
+function parseCSV(text) {
+  const lines = text.split('\n').map(l => l.split(',').map(c => c.trim()));
+  const brands = {};
+  let current = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const row = lines[i];
+    const col1 = (row[1] || '').trim();
+
+    if (['Jägarliv','Friluftsfabriken','North Edge'].includes(col1)) {
+      current = col1;
+      brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: '', merchant: '' };
+      continue;
+    }
+    if (!current) continue;
+    const b = brands[current];
+    const vals = row.slice(2, 8);
+
+    if (col1 === 'Google') b.google = vals.map(parseNum);
+    else if (col1 === 'Meta') b.meta = vals.map(parseNum);
+    else if (col1 === 'Spend total') b.spendTotal = vals.map(parseNum);
+    else if (col1 === 'Intäkt brutto') b.brutto = vals.map(parseNum);
+    else if (col1 === 'Intäkt netto') b.netto = vals.map(parseNum);
+    else if (col1 === 'Mf% brutto') b.mfBrutto = vals.map(parsePct);
+    else if (col1 === 'Mf% netto') b.mfNetto = vals.map(parsePct);
+    else if (col1 === "Check in´s" || col1 === "Check in's") b.checkins = vals.filter(Boolean).join(', ');
+    else if (col1 === 'Merchant Center') b.merchant = vals.filter(Boolean).join(', ');
+  }
+  return brands;
+}
+
+function parseNum(s) {
+  if (!s) return 0;
+  return parseFloat(s.replace(/[^0-9.\-]/g, '')) || 0;
+}
+function parsePct(s) {
+  if (!s || s.includes('DIV') || s === '') return null;
+  const n = parseFloat(s.replace(/[^0-9.\-]/g, ''));
+  return isNaN(n) ? null : n;
+}
+function fmt(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
+function sum(arr) { return arr.reduce((a, b) => a + b, 0); }
+
+async function fetchData() {
+  document.getElementById('status').textContent = 'Hämtar data...';
+  try {
+    const res = await fetch(CSV_URL);
+    const text = await res.text();
+    brandData = parseCSV(text);
+    render(brandData);
+    const now = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('status').textContent = `Vecka 27 — senast uppdaterad ${now}`;
+  } catch (e) {
+    document.getElementById('status').textContent = 'Kunde inte hämta data. Försök igen.';
+  }
+}
+
+function render(brands) {
+  const names = Object.keys(brands);
+  const tabsEl = document.getElementById('tabs');
+  const contentEl = document.getElementById('content');
+  tabsEl.innerHTML = '';
+  contentEl.innerHTML = '';
+
+  // Overview tab
+  const overviewTab = document.createElement('div');
+  overviewTab.className = 'tab active';
+  overviewTab.textContent = 'Översikt';
+  overviewTab.onclick = () => switchTab('overview');
+  overviewTab.dataset.target = 'overview';
+  tabsEl.appendChild(overviewTab);
+
+  names.forEach(name => {
+    const tab = document.createElement('div');
+    tab.className = 'tab';
+    tab.textContent = name;
+    tab.onclick = () => switchTab(name);
+    tab.dataset.target = name;
+    tabsEl.appendChild(tab);
+  });
+
+  // Overview panel
+  const overviewPanel = document.createElement('div');
+  overviewPanel.className = 'brand-panel active';
+  overviewPanel.id = 'panel-overview';
+  overviewPanel.innerHTML = buildOverview(brands);
+  contentEl.appendChild(overviewPanel);
+
+  // Brand panels
+  names.forEach(name => {
+    const panel = document.createElement('div');
+    panel.className = 'brand-panel';
+    panel.id = 'panel-' + name;
+    panel.innerHTML = buildBrandPanel(name, brands[name]);
+    contentEl.appendChild(panel);
+  });
+
+  // Render all charts
+  requestAnimationFrame(() => {
+    names.forEach(name => renderBrandCharts(name, brands[name]));
+    renderOverviewCharts(brands);
+  });
+}
+
+function buildOverview(brands) {
+  const names = Object.keys(brands);
+  let totalSpend = 0, totalRev = 0;
+  names.forEach(n => { totalSpend += sum(brands[n].spendTotal); totalRev += sum(brands[n].brutto); });
+  const roas = totalSpend > 0 ? (totalRev / totalSpend).toFixed(2) + 'x' : '—';
+
+  let h = '<div class="metrics" style="margin-bottom: 1.5rem;">';
+  h += `<div class="metric"><div class="label">Total spend</div><div class="value">${fmt(totalSpend)}</div></div>`;
+  h += `<div class="metric"><div class="label">Total intäkt brutto</div><div class="value">${fmt(totalRev)}</div></div>`;
+  h += `<div class="metric"><div class="label">ROAS brutto</div><div class="value">${roas}</div></div>`;
+  h += `<div class="metric"><div class="label">Nettomarginal</div><div class="value">${totalRev > 0 ? Math.round(((sum(names.map(n=>sum(brands[n].netto))) - totalSpend) / sum(names.map(n=>sum(brands[n].netto)))) * 100) + '%' : '—'}</div></div>`;
+  h += '</div>';
+
+  h += '<div class="overview-grid">';
+  names.forEach(name => {
+    const b = brands[name];
+    const c = BRAND_COLORS[name] || { main: '#888', bg: 'var(--bg)' };
+    const ts = sum(b.spendTotal);
+    const tr = sum(b.brutto);
+    const r = ts > 0 ? (tr / ts).toFixed(2) + 'x' : '—';
+    h += `<div class="overview-card">
+      <h3><span class="dot" style="background: ${c.main};"></span>${name}</h3>
+      <div class="overview-metrics">
+        <div class="overview-metric"><div class="label">Spend</div><div class="value" style="color: ${c.main};">${fmt(ts)}</div></div>
+        <div class="overview-metric"><div class="label">Intäkt</div><div class="value">${fmt(tr)}</div></div>
+        <div class="overview-metric"><div class="label">ROAS</div><div class="value">${r}</div></div>
+        <div class="overview-metric"><div class="label">Google/Meta</div><div class="value" style="font-size:14px;">${fmt(sum(b.google))} / ${fmt(sum(b.meta))}</div></div>
+      </div>
+      <div class="overview-chart"><canvas id="ov-chart-${name.replace(/\s/g,'_')}" role="img" aria-label="Spend vs intäkt ${name}"></canvas></div>
+    </div>`;
+  });
+  h += '</div>';
+  return h;
+}
+
+function buildBrandPanel(name, b) {
+  const c = BRAND_COLORS[name] || { main: '#888' };
+  const ts = sum(b.spendTotal);
+  const tr = sum(b.brutto);
+  const tn = sum(b.netto);
+  const roas = ts > 0 ? (tr / ts).toFixed(2) + 'x' : '—';
+  const roasN = ts > 0 ? (tn / ts).toFixed(2) + 'x' : '—';
+  const avgMfn = b.mfNetto.filter(v => v !== null);
+  const mfnAvg = avgMfn.length > 0 ? Math.round(avgMfn.reduce((a,b)=>a+b,0) / avgMfn.length) + '%' : '—';
+
+  let h = '<div class="metrics">';
+  h += `<div class="metric"><div class="label">Total spend</div><div class="value" style="color:var(--red);">${fmt(ts)}</div></div>`;
+  h += `<div class="metric"><div class="label">Intäkt brutto</div><div class="value" style="color:var(--green);">${fmt(tr)}</div></div>`;
+  h += `<div class="metric"><div class="label">Intäkt netto</div><div class="value">${fmt(tn)}</div></div>`;
+  h += `<div class="metric"><div class="label">ROAS brutto</div><div class="value">${roas}</div></div>`;
+  h += `<div class="metric"><div class="label">ROAS netto</div><div class="value">${roasN}</div></div>`;
+  h += `<div class="metric"><div class="label">Mf% netto snitt</div><div class="value">${mfnAvg}</div></div>`;
+  h += '</div>';
+
+  h += '<table class="grid-table"><thead><tr><th></th>';
+  DAYS.forEach(d => { h += `<th>${d.substring(0,3)}</th>`; });
+  h += '<th>Totalt</th></tr></thead><tbody>';
+
+  h += '<tr class="section-header"><td>Spend</td><td colspan="7"></td></tr>';
+  h += tableRow('Google', b.google);
+  h += tableRow('Meta', b.meta);
+  h += tableRow('Spend total', b.spendTotal, true);
+  h += '<tr class="section-header"><td>Intäkt</td><td colspan="7"></td></tr>';
+  h += tableRow('Brutto', b.brutto);
+  h += tableRow('Netto', b.netto);
+  h += '<tr class="section-header"><td>Marginal</td><td colspan="7"></td></tr>';
+  h += pctRow('Mf% brutto', b.mfBrutto);
+  h += pctRow('Mf% netto', b.mfNetto);
+
+  h += '</tbody></table>';
+
+  h += '<div class="charts">';
+  h += `<div class="chart-card"><h3>Spend vs intäkt brutto per dag</h3><div class="chart-wrap"><canvas id="bar-${name.replace(/\s/g,'_')}" role="img" aria-label="Stapeldiagram"></canvas></div></div>`;
+  h += `<div class="chart-card"><h3>Marginalfördelning %</h3><div class="chart-wrap"><canvas id="mf-${name.replace(/\s/g,'_')}" role="img" aria-label="Linjediagram marginal"></canvas></div></div>`;
+  h += '</div>';
+
+  if (b.checkins || b.merchant) {
+    h += '<div class="notes-section">';
+    h += `<div class="note-box"><h3><i class="ti ti-clipboard-check" style="vertical-align:-2px;"></i> Check in's</h3><p>${b.checkins || '—'}</p></div>`;
+    h += `<div class="note-box"><h3><i class="ti ti-shopping-cart" style="vertical-align:-2px;"></i> Merchant Center</h3><p>${b.merchant || '—'}</p></div>`;
+    h += '</div>';
+  }
+  return h;
+}
+
+function tableRow(label, arr, bold) {
+  const cls = bold ? ' class="computed"' : '';
+  let h = `<tr${cls}><td>${label}</td>`;
+  arr.forEach(v => { h += `<td>${fmt(v)}</td>`; });
+  h += `<td>${fmt(sum(arr))}</td></tr>`;
+  return h;
+}
+
+function pctRow(label, arr) {
+  let h = `<tr><td>${label}</td>`;
+  arr.forEach(v => {
+    if (v === null) h += '<td style="color:var(--text-hint);">—</td>';
+    else h += `<td class="${v >= 0 ? 'mf-pos' : 'mf-neg'}">${Math.round(v)}%</td>`;
+  });
+  const valid = arr.filter(v => v !== null);
+  const avg = valid.length > 0 ? Math.round(valid.reduce((a,b)=>a+b,0)/valid.length) + '%' : '—';
+  h += `<td style="font-weight:600;">${avg}</td></tr>`;
+  return h;
+}
+
+function switchTab(target) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.target === target));
+  document.querySelectorAll('.brand-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + target));
+}
+
+function renderBrandCharts(name, b) {
+  const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const textColor = isDark ? '#999' : '#666';
+  const safeName = name.replace(/\s/g, '_');
+  const days = DAYS.map(d => d.substring(0, 3));
+  const c = BRAND_COLORS[name] || { main: '#888' };
+
+  const barEl = document.getElementById('bar-' + safeName);
+  if (barEl) {
+    if (charts['bar-' + safeName]) charts['bar-' + safeName].destroy();
+    charts['bar-' + safeName] = new Chart(barEl, {
+      type: 'bar',
+      data: {
+        labels: days,
+        datasets: [
+          { label: 'Spend', data: b.spendTotal, backgroundColor: '#E24B4A88', borderColor: '#E24B4A', borderWidth: 1, borderRadius: 4 },
+          { label: 'Intäkt brutto', data: b.brutto, backgroundColor: c.main + '88', borderColor: c.main, borderWidth: 1, borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, font: { size: 11, family: 'Inter' }, color: textColor, padding: 16 } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: textColor, font: { size: 11, family: 'Inter' } } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11, family: 'Inter' }, callback: v => v >= 1000 ? Math.round(v/1000) + 'k' : v } }
+        }
+      }
+    });
+  }
+
+  const mfEl = document.getElementById('mf-' + safeName);
+  if (mfEl) {
+    if (charts['mf-' + safeName]) charts['mf-' + safeName].destroy();
+    charts['mf-' + safeName] = new Chart(mfEl, {
+      type: 'line',
+      data: {
+        labels: days,
+        datasets: [
+          { label: 'Mf% brutto', data: b.mfBrutto, borderColor: '#534AB7', backgroundColor: '#534AB722', tension: 0.3, pointRadius: 4, borderWidth: 2, spanGaps: false },
+          { label: 'Mf% netto', data: b.mfNetto, borderColor: '#D85A30', backgroundColor: '#D85A3022', tension: 0.3, pointRadius: 4, borderWidth: 2, borderDash: [5,3], spanGaps: false }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, font: { size: 11, family: 'Inter' }, color: textColor, padding: 16 } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: textColor, font: { size: 11, family: 'Inter' } } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11, family: 'Inter' }, callback: v => v + '%' }, suggestedMin: -50, suggestedMax: 100 }
+        }
+      }
+    });
+  }
+}
+
+function renderOverviewCharts(brands) {
+  const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const textColor = isDark ? '#999' : '#666';
+  const days = DAYS.map(d => d.substring(0, 3));
+
+  Object.keys(brands).forEach(name => {
+    const b = brands[name];
+    const c = BRAND_COLORS[name] || { main: '#888' };
+    const safeName = name.replace(/\s/g, '_');
+    const el = document.getElementById('ov-chart-' + safeName);
+    if (!el) return;
+    if (charts['ov-' + safeName]) charts['ov-' + safeName].destroy();
+    charts['ov-' + safeName] = new Chart(el, {
+      type: 'bar',
+      data: {
+        labels: days,
+        datasets: [
+          { label: 'Spend', data: b.spendTotal, backgroundColor: '#E24B4A77', borderRadius: 3 },
+          { label: 'Intäkt', data: b.brutto, backgroundColor: c.main + '77', borderRadius: 3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10, family: 'Inter' } } },
+          y: { grid: { color: gridColor }, ticks: { display: false } }
+        }
+      }
+    });
+  });
+}
+
+fetchData();
+setInterval(fetchData, 5 * 60 * 1000);
+</script>
+</body>
+</html>
