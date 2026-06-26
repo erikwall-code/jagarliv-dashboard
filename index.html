@@ -290,17 +290,30 @@ function buildBrandPanel(name, b) {
   const avgMfn = b.mfNetto.filter(v => v !== null);
   const mfnAvg = avgMfn.length > 0 ? Math.round(avgMfn.reduce((a,b)=>a+b,0) / avgMfn.length) + '%' : '—';
 
-  let h = '<div class="metrics">';
-  h += `<div class="metric"><div class="label">Total spend</div><div class="value" style="color:var(--red);">${fmt(ts)}</div></div>`;
+  const totalOrders = sum(b.orders || []);
+  const aovVals = (b.aov || []).filter(v => v > 0);
+  const avgAov = aovVals.length > 0 ? Math.round(aovVals.reduce((a,b)=>a+b,0) / aovVals.length) : 0;
+
+  let h = '<div class="metrics" style="grid-template-columns: repeat(3, 1fr);">';
+  h += `<div class="metric"><div class="label">Google spend</div><div class="value">${fmt(sum(b.google))}</div></div>`;
+  h += `<div class="metric"><div class="label">Meta spend</div><div class="value">${fmt(sum(b.meta))}</div></div>`;
+  h += `<div class="metric"><div class="label">Spend total</div><div class="value" style="color:var(--red);">${fmt(ts)}</div></div>`;
+  h += '</div>';
+
+  h += '<div class="metrics" style="grid-template-columns: repeat(2, 1fr);">';
   h += `<div class="metric"><div class="label">Intäkt brutto</div><div class="value" style="color:var(--green);">${fmt(tr)}</div></div>`;
   h += `<div class="metric"><div class="label">Intäkt netto</div><div class="value">${fmt(tn)}</div></div>`;
+  h += '</div>';
+
+  h += '<div class="metrics" style="grid-template-columns: repeat(2, 1fr);">';
+  h += `<div class="metric"><div class="label">Antal ordrar</div><div class="value">${totalOrders > 0 ? totalOrders : '—'}</div></div>`;
+  h += `<div class="metric"><div class="label">AOV</div><div class="value">${avgAov > 0 ? fmt(avgAov) : '—'}</div></div>`;
+  h += '</div>';
+
+  h += '<div class="metrics" style="grid-template-columns: repeat(3, 1fr);">';
   h += `<div class="metric"><div class="label">ROAS brutto</div><div class="value">${roas}</div></div>`;
   h += `<div class="metric"><div class="label">ROAS netto</div><div class="value">${roasN}</div></div>`;
   h += `<div class="metric"><div class="label">Mf% netto snitt</div><div class="value">${mfnAvg}</div></div>`;
-  const totalOrders = sum(b.orders || []);
-  const avgAov = totalOrders > 0 ? Math.round(sum(b.aov || [].filter(v => v > 0)) / b.aov.filter(v => v > 0).length) : 0;
-  h += `<div class="metric"><div class="label">Antal ordrar</div><div class="value">${totalOrders > 0 ? totalOrders : '—'}</div></div>`;
-  h += `<div class="metric"><div class="label">AOV</div><div class="value">${avgAov > 0 ? fmt(avgAov) : '—'}</div></div>`;
   h += '</div>';
 
   h += '<div class="table-scroll"><table class="grid-table"><thead><tr><th></th>';
@@ -311,12 +324,11 @@ function buildBrandPanel(name, b) {
   h += tableRow('Google', b.google);
   h += tableRow('Meta', b.meta);
   h += tableRow('Spend total', b.spendTotal, true);
-  h += '<tr class="section-header"><td>Ordrar</td><td colspan="7"></td></tr>';
-  h += tableRow('Antal order', b.orders || [], false, true);
-  h += tableRow('AOV', b.aov || []);
   h += '<tr class="section-header"><td>Intäkt</td><td colspan="7"></td></tr>';
   h += tableRow('Brutto', b.brutto);
   h += tableRow('Netto', b.netto);
+  h += tableRow('Antal order', b.orders || [], false, true);
+  h += tableRow('AOV', b.aov || []);
   h += '<tr class="section-header"><td>Marketing Cost Ratio</td><td colspan="7"></td></tr>';
   h += pctRow('Mf% brutto', b.mfBrutto);
   h += pctRow('Mf% netto', b.mfNetto);
