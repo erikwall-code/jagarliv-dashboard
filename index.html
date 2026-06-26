@@ -192,22 +192,22 @@ function parseCSV(text) {
     });
     if (!matchedBrand && (col1.toLowerCase().includes('garliv') || col1.toLowerCase().includes('jägar') || col1.toLowerCase().includes('jagar'))) {
       current = 'Jägarliv';
-      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: '', merchant: '' };
+      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: [], merchant: [] };
       continue;
     }
     if (!matchedBrand && col1.toLowerCase().includes('frilufts')) {
       current = 'Friluftsfabriken';
-      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: '', merchant: '' };
+      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: [], merchant: [] };
       continue;
     }
     if (!matchedBrand && col1.toLowerCase().includes('north')) {
       current = 'North Edge';
-      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: '', merchant: '' };
+      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: [], merchant: [] };
       continue;
     }
     if (matchedBrand) {
       current = matchedBrand;
-      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: '', merchant: '' };
+      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: [], merchant: [] };
       continue;
     }
     if (!current) continue;
@@ -222,8 +222,8 @@ function parseCSV(text) {
     else if (col1 === 'Intäkt netto') b.netto = vals.map(parseNum);
     else if (col1 === 'Mf% brutto') b.mfBrutto = vals.map(parsePct);
     else if (col1 === 'Mf% netto') b.mfNetto = vals.map(parsePct);
-    else if (col1.includes('Check in')) b.checkins = vals.filter(Boolean).join(', ');
-    else if (col1 === 'Merchant Center') b.merchant = vals.filter(Boolean).join(', ');
+    else if (col1.includes('Check in')) b.checkins = vals.map(v => v.toLowerCase().trim() === 'x');
+    else if (col1 === 'Merchant Center') b.merchant = vals.map(v => v.toLowerCase().trim() === 'x');
   }
   return brands;
 }
@@ -330,7 +330,7 @@ function buildBrandPanel(name, b) {
   h += `<div class="chart-card"><h3><i class="ti ti-shopping-cart" style="vertical-align:-2px; margin-right:4px;"></i> Merchant Center — check in's</h3>`;
   h += '<div class="checkin-grid">';
   DAYS.forEach((d, i) => {
-    const checked = b.checkins && b.checkins.includes(d.substring(0,3)) ? ' checked' : '';
+    const checked = b.merchant[i] ? ' checked' : '';
     h += `<label class="checkin-day">
       <input type="checkbox" class="checkin-cb" data-brand="${safeName}" data-day="${i}"${checked}>
       <span class="checkin-label">${d.substring(0,3)}</span>
