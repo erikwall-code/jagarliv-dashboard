@@ -167,12 +167,15 @@ function parseCSV(text) {
     const row = lines[i];
     const col1 = (row[1] || '').trim();
 
-    if (['Jägarliv','Friluftsfabriken','North Edge'].includes(col1)) {
-      current = col1;
-      brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: '', merchant: '' };
+    const brandNames = ['Jägarliv','Friluftsfabriken','North Edge'];
+    const matchedBrand = brandNames.find(b => col1 === b || col1.startsWith(b + ' '));
+    if (matchedBrand) {
+      current = matchedBrand;
+      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: '', merchant: '' };
       continue;
     }
     if (!current) continue;
+    if (col1 === 'Vecka 27' || col1 === 'Spend') continue;
     const b = brands[current];
     const vals = row.slice(2, 8);
 
@@ -183,7 +186,7 @@ function parseCSV(text) {
     else if (col1 === 'Intäkt netto') b.netto = vals.map(parseNum);
     else if (col1 === 'Mf% brutto') b.mfBrutto = vals.map(parsePct);
     else if (col1 === 'Mf% netto') b.mfNetto = vals.map(parsePct);
-    else if (col1 === "Check in´s" || col1 === "Check in's") b.checkins = vals.filter(Boolean).join(', ');
+    else if (col1.includes('Check in')) b.checkins = vals.filter(Boolean).join(', ');
     else if (col1 === 'Merchant Center') b.merchant = vals.filter(Boolean).join(', ');
   }
   return brands;
