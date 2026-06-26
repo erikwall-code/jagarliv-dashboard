@@ -235,8 +235,7 @@ function sum(arr) { return arr.reduce((a, b) => a + b, 0); }
 async function fetchData() {
   document.getElementById('status').textContent = 'Hämtar data...';
   try {
-    const sheetId = '1Gt-eOQjYP9EpOWyCg-14jSfw0pWhjZxG2zElL2phBm0';
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
+    const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTHv10ybkEvoxp99nHP55sLFD7AkfRZTQXH-WbYrXD3QUDjSYjeWqcV1hkHTbMQzUyj2u9gCL-aKhF2/pub?output=csv&' + Date.now();
     const res = await fetch(url);
     const text = await res.text();
     console.log('Raw CSV:', text.substring(0, 500));
