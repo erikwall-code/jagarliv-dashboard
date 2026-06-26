@@ -168,7 +168,26 @@ function parseCSV(text) {
     const col1 = (row[1] || '').trim();
 
     const brandNames = ['Jägarliv','Friluftsfabriken','North Edge'];
-    const matchedBrand = brandNames.find(b => col1 === b || col1.startsWith(b + ' '));
+    const col1n = col1.normalize('NFC');
+    const matchedBrand = brandNames.find(b => {
+      const bn = b.normalize('NFC');
+      return col1n === bn || col1n.startsWith(bn + ' ') || col1n.startsWith(bn + ' ');
+    });
+    if (!matchedBrand && (col1.toLowerCase().includes('garliv') || col1.toLowerCase().includes('jägar') || col1.toLowerCase().includes('jagar'))) {
+      current = 'Jägarliv';
+      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: '', merchant: '' };
+      continue;
+    }
+    if (!matchedBrand && col1.toLowerCase().includes('frilufts')) {
+      current = 'Friluftsfabriken';
+      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: '', merchant: '' };
+      continue;
+    }
+    if (!matchedBrand && col1.toLowerCase().includes('north')) {
+      current = 'North Edge';
+      if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: '', merchant: '' };
+      continue;
+    }
     if (matchedBrand) {
       current = matchedBrand;
       if (!brands[current]) brands[current] = { google: [], meta: [], spendTotal: [], brutto: [], netto: [], mfBrutto: [], mfNetto: [], checkins: '', merchant: '' };
@@ -211,8 +230,9 @@ async function fetchData() {
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
     const res = await fetch(url);
     const text = await res.text();
-    const clean = text.replace(/^"|"$/gm, '').replace(/""/g, '"');
-    brandData = parseCSV(clean);
+    console.log('Raw CSV:', text.substring(0, 500));
+    brandData = parseCSV(text);
+    console.log('Parsed brands:', Object.keys(brandData), brandData);
     render(brandData);
     const now = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('status').textContent = `Vecka 27 — senast uppdaterad ${now}`;
