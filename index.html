@@ -315,7 +315,7 @@ function buildOverview(brands) {
         <div class="overview-metric"><div class="label">Spend</div><div class="value" style="color: ${c.main};">${fmt(ts)}</div></div>
         <div class="overview-metric"><div class="label">Intäkt</div><div class="value">${fmt(tr)}</div></div>
         <div class="overview-metric"><div class="label">ROAS</div><div class="value">${r}</div></div>
-        <div class="overview-metric"><div class="label">Google/Meta</div><div class="value" style="font-size:14px;">${fmt(sum(b.google))} / ${fmt(sum(b.meta))}</div></div>
+        <div class="overview-metric"><div class="label">Mf% netto</div><div class="value">${(() => { const valid = b.mfNetto.filter(v => v !== null); return valid.length > 0 ? Math.round(valid.reduce((a,b)=>a+b,0)/valid.length) + '%' : '—'; })()}</div></div>
       </div>
       <div class="overview-chart"><canvas id="ov-chart-${name.replace(/\s/g,'_')}" role="img" aria-label="Spend vs intäkt ${name}"></canvas></div>
     </div>`;
